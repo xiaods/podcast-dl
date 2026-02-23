@@ -4,6 +4,8 @@ A CLI tool to download podcast episodes from RSS feeds and transcribe them to te
 
 [中文文档](README_CN.md)
 
+<img src="cli-shot.png" alt="CLI screenshot" width="800" />
+
 ## Features
 
 - Download podcast audio from RSS feeds or direct URLs

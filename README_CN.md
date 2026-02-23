@@ -6,6 +6,8 @@
 
 [English](README.md)
 
+<img src="cli-shot.png" alt="命令行截图" width="800" />
+
 ## 功能特性
 
 - 从 RSS 订阅源或直链 URL 下载 Podcast 音频
