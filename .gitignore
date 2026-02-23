@@ -10,3 +10,4 @@ venv/
 *.m4a
 *.wav
 *.ogg
+.claude/*

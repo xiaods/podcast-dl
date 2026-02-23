@@ -1,168 +1,162 @@
 # podcast-dl
 
-一个命令行工具，自动下载 Podcast 音频并转录为文字（支持中文）。
+A CLI tool to download podcast episodes from RSS feeds and transcribe them to text using [faster-whisper](https://github.com/SYSTRAN/faster-whisper). Supports Chinese and 90+ other languages.
 
-基于 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 实现语音识别，支持 RSS 订阅源批量下载，输出 TXT / SRT / JSON 多种格式。
+[中文文档](README_CN.md)
 
-## 功能特性
+## Features
 
-- 从 RSS 订阅源或直链 URL 下载 Podcast 音频
-- 使用 Whisper 模型将语音转录为文字，原生支持中文
-- 自动检测语言，无需手动指定
-- VAD 静音过滤，自动跳过片头音乐、广告和静音段
-- 流式下载，带实时进度条
-- 支持断点续传（已下载文件不重复下载）
-- 输出格式：TXT（纯文本）、SRT（字幕）、JSON（含时间戳）
-- CPU / GPU 自动适配，M 系列 Mac 可直接运行
+- Download podcast audio from RSS feeds or direct URLs
+- Transcribe speech to text with automatic language detection
+- VAD filtering — silently skips music, ads, and silence
+- Streaming download with real-time progress bar
+- Resume-safe: skips already-downloaded files
+- Output formats: `txt`, `srt`, `json`, or all at once
+- CPU / GPU auto-detection, works on Apple Silicon and x86 Macs
 
-## 安装
+## Installation
 
-推荐使用 [uv](https://github.com/astral-sh/uv) 管理隔离的 Python 环境，体验类似 `npx`，无需手动创建虚拟环境。
+Requires Python 3.10–3.12. Recommended to use [uv](https://github.com/astral-sh/uv) for isolated environments (like `npx` for Python).
 
-> **注意**：`faster-whisper` 依赖的 `onnxruntime` 在 macOS x86_64 上目前仅支持 Python ≤ 3.12，安装时需指定 Python 版本。
+> **Note**: `onnxruntime` (a `faster-whisper` dependency) does not yet have wheels for Python 3.13 on macOS x86_64. Specify `--python 3.11` to avoid resolution errors.
 
-### 方式一：全局工具安装（推荐）
+### Option 1: Global tool install (recommended)
 
-安装到独立隔离环境，全局可用：
+Installs into an isolated environment, available system-wide:
 
 ```bash
 uv tool install --python 3.11 .
 ```
 
-卸载：
+Uninstall:
 
 ```bash
 uv tool uninstall podcast-dl
 ```
 
-### 方式二：临时运行（无需安装）
-
-类似 `npx`，用完即走，不污染环境：
+### Option 2: Run without installing (like npx)
 
 ```bash
 uvx --python 3.11 --from . podcast-dl run https://feeds.example.com/podcast.rss
 ```
 
-### 方式三：项目虚拟环境（开发用）
+### Option 3: Project virtual environment (for development)
 
 ```bash
 uv sync --python 3.11
 uv run podcast-dl --help
 ```
 
-### 传统方式（pip + Python 3.11）
+### Option 4: pip
 
 ```bash
 pip install -e .
 ```
 
-> 首次转录时会自动下载 Whisper 模型文件（模型缓存在 `~/.cache/podcast-dl/`）。
+> Whisper model weights are downloaded automatically on first use and cached in `~/Library/Caches/podcast-dl/` (macOS) or `~/.cache/podcast-dl/` (Linux).
 
-## 使用方法
+## Usage
 
-### 下载并转录（最常用）
+### Download + transcribe (most common)
 
 ```bash
-# 下载 RSS 最新一集并转录
+# Download and transcribe the latest episode
 podcast-dl run https://feeds.example.com/podcast.rss
 
-# 下载最新 3 集，指定中文，输出 SRT 字幕
+# Latest 3 episodes, Chinese, SRT output
 podcast-dl run https://feeds.example.com/podcast.rss --latest 3 --language zh --format srt
 
-# 使用较小的模型（速度更快）
+# Use a smaller model (faster)
 podcast-dl run https://feeds.example.com/podcast.rss --model medium
 
-# 直接下载音频 URL（非 RSS）
+# Direct audio URL (not RSS)
 podcast-dl run https://example.com/episode.mp3 --direct
 
-# 指定输出目录
+# Custom output directory
 podcast-dl run https://feeds.example.com/podcast.rss --output ~/podcasts/
 ```
 
-### 仅下载音频
+### Download only
 
 ```bash
-# 下载全部集数
+# Download all episodes
 podcast-dl download https://feeds.example.com/podcast.rss
 
-# 仅下载最新 5 集
+# Latest 5 episodes only
 podcast-dl download https://feeds.example.com/podcast.rss --latest 5
 
-# 列出所有集数（不下载）
+# List episodes without downloading
 podcast-dl download https://feeds.example.com/podcast.rss --list
 
-# 按关键词过滤集数
+# Filter by keyword
 podcast-dl download https://feeds.example.com/podcast.rss --filter "AI"
-
-# 下载直链音频
-podcast-dl download https://example.com/episode.mp3 --direct
 ```
 
-### 转录本地音频文件
+### Transcribe a local file
 
 ```bash
-# 转录本地文件（自动检测语言）
+# Auto-detect language
 podcast-dl transcribe episode.mp3
 
-# 指定中文，输出 SRT 字幕
+# Force Chinese, SRT output
 podcast-dl transcribe episode.mp3 --language zh --format srt
 
-# 输出所有格式（txt + srt + json）
+# All output formats at once
 podcast-dl transcribe episode.mp3 --format all
 
-# 使用大模型获得更高精度
+# Best accuracy
 podcast-dl transcribe episode.mp3 --model large-v3
 ```
 
-## 选项说明
+## Options
 
 ### `podcast-dl run`
 
-| 选项 | 默认值 | 说明 |
+| Option | Default | Description |
 |---|---|---|
-| `--latest N` | `1` | 处理最新 N 集（0 = 全部） |
-| `--direct` | - | 将 URL 视为直链音频而非 RSS |
-| `-o, --output PATH` | `~/Downloads/podcast-dl/` | 输出目录 |
-| `-m, --model` | `large-v3` | Whisper 模型大小 |
-| `-l, --language` | 自动检测 | 语言代码，如 `zh`、`en` |
-| `--format` | `txt` | 输出格式：`txt` / `srt` / `json` / `all` |
-| `--compute-type` | 自动 | 计算精度：`int8` / `float16` 等 |
-| `--skip-existing` | 开启 | 跳过已存在的文件 |
+| `--latest N` | `1` | Number of latest episodes to process (0 = all) |
+| `--direct` | — | Treat URL as a direct audio link, not RSS |
+| `-o, --output PATH` | `~/Downloads/podcast-dl/` | Output directory |
+| `-m, --model` | `large-v3` | Whisper model size |
+| `-l, --language` | auto-detect | Language code, e.g. `zh`, `en`, `ja` |
+| `--format` | `txt` | Output format: `txt` / `srt` / `json` / `all` |
+| `--compute-type` | auto | Precision: `int8`, `float16`, etc. |
+| `--skip-existing` | on | Skip files that already exist |
 
-### 模型选择参考
+### Model reference
 
-| 模型 | 磁盘大小 | 速度 | 精度 |
+| Model | Size | Speed | Accuracy |
 |---|---|---|---|
-| `tiny` | ~75 MB | 最快 | 较低 |
-| `base` | ~145 MB | 很快 | 一般 |
-| `small` | ~465 MB | 快 | 较好 |
-| `medium` | ~1.5 GB | 中等 | 好 |
-| `large-v2` | ~3 GB | 慢 | 很好 |
-| `large-v3` | ~3 GB | 慢 | 最好（默认） |
+| `tiny` | ~75 MB | Fastest | Low |
+| `base` | ~145 MB | Very fast | Fair |
+| `small` | ~465 MB | Fast | Good |
+| `medium` | ~1.5 GB | Moderate | Better |
+| `large-v2` | ~3 GB | Slow | Great |
+| `large-v3` | ~3 GB | Slow | Best (default) |
 
-> CPU 用户建议使用 `medium` 模型以平衡速度和精度。
+> On CPU-only machines, `medium` offers the best balance of speed and accuracy.
 
-## 输出文件
+## Output
 
-转录结果默认保存在 `~/Downloads/podcast-dl/` 目录，文件名根据集数标题自动生成：
+Files are saved to `~/Downloads/podcast-dl/` by default, named after the episode title:
 
 ```
 ~/Downloads/podcast-dl/
-├── My Podcast Episode 42.mp3      # 音频文件
-├── My Podcast Episode 42.txt      # 纯文本转录
-├── My Podcast Episode 42.srt      # SRT 字幕文件
-└── My Podcast Episode 42.json     # 带时间戳的 JSON
+├── My Podcast Episode 42.mp3      # audio
+├── My Podcast Episode 42.txt      # plain text transcript
+├── My Podcast Episode 42.srt      # subtitle file
+└── My Podcast Episode 42.json     # transcript with timestamps
 ```
 
-## 依赖
+## Dependencies
 
-- [faster-whisper](https://github.com/SYSTRAN/faster-whisper) — 语音转文字引擎
-- [feedparser](https://github.com/kurtmckee/feedparser) — RSS 订阅解析
-- [httpx](https://github.com/encode/httpx) — 音频流式下载
-- [click](https://github.com/pallets/click) — 命令行框架
-- [rich](https://github.com/Textualize/rich) — 终端美化输出
-- [platformdirs](https://github.com/platformdirs/platformdirs) — 跨平台路径管理
+- [faster-whisper](https://github.com/SYSTRAN/faster-whisper) — speech-to-text engine
+- [feedparser](https://github.com/kurtmckee/feedparser) — RSS feed parsing
+- [httpx](https://github.com/encode/httpx) — streaming audio download
+- [click](https://github.com/pallets/click) — CLI framework
+- [rich](https://github.com/Textualize/rich) — terminal output
+- [platformdirs](https://github.com/platformdirs/platformdirs) — cross-platform cache paths
 
-## 许可证
+## License
 
-MIT License. 详见 [LICENSE](LICENSE) 文件。
+MIT License. See [LICENSE](LICENSE).
