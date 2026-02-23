@@ -4,6 +4,8 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeRemainingColumn
+
 from podcast_dl.utils.console import get_console
 
 console = get_console()
@@ -69,30 +71,42 @@ def transcribe_file(
     )
 
     from podcast_dl.utils.paths import get_cache_dir
-    model = WhisperModel(
-        model_size,
-        device=device,
-        compute_type=compute_type,
-        download_root=str(get_cache_dir()),
-    )
 
-    with console.status("Transcribing audio..."):
-        segments_iter, info = model.transcribe(
-            str(audio_path),
-            language=language,
-            beam_size=5,
-            vad_filter=True,
-            vad_parameters={"min_silence_duration_ms": 500},
+    with console.status(f"  Loading model [bold]{model_size}[/bold]..."):
+        model = WhisperModel(
+            model_size,
+            device=device,
+            compute_type=compute_type,
+            download_root=str(get_cache_dir()),
         )
-        segments = [
-            TranscriptSegment(start=seg.start, end=seg.end, text=seg.text)
-            for seg in segments_iter
-        ]
+
+    segments_iter, info = model.transcribe(
+        str(audio_path),
+        language=language,
+        beam_size=5,
+        vad_filter=True,
+        vad_parameters={"min_silence_duration_ms": 500},
+    )
 
     console.log(
         f"Detected language: [cyan]{info.language}[/cyan] "
-        f"({info.language_probability:.0%} confidence)"
+        f"({info.language_probability:.0%} confidence) | "
+        f"Duration: {_fmt_duration(info.duration)}"
     )
+
+    total_secs = info.duration
+    segments = []
+    with Progress(
+        TextColumn("  [progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TimeRemainingColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Transcribing", total=total_secs)
+        for seg in segments_iter:
+            segments.append(TranscriptSegment(start=seg.start, end=seg.end, text=seg.text))
+            progress.update(task, completed=seg.end)
     return TranscriptResult(language=info.language, segments=segments)
 
 
@@ -116,3 +130,12 @@ def _srt_time(secs: float) -> str:
     s = int(secs % 60)
     ms = int((secs - int(secs)) * 1000)
     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+
+
+def _fmt_duration(secs: float) -> str:
+    h = int(secs // 3600)
+    m = int((secs % 3600) // 60)
+    s = int(secs % 60)
+    if h:
+        return f"{h}h {m:02d}m {s:02d}s"
+    return f"{m}m {s:02d}s"
