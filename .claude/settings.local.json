@@ -3,7 +3,10 @@
     "allow": [
       "Bash(pip install:*)",
       "Bash(uv --version:*)",
-      "Bash(uv tool install:*)"
+      "Bash(uv tool install:*)",
+      "Bash(curl:*)",
+      "Bash(python3.11:*)",
+      "Bash(podcast-dl download:*)"
     ]
   }
 }

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import feedparser
+import httpx
 
 
 @dataclass
@@ -17,10 +18,23 @@ class Episode:
 
 
 def parse_feed(url: str) -> list[Episode]:
-    """Parse an RSS feed and return episodes sorted newest-first."""
-    feed = feedparser.parse(url)
+    """Parse an RSS feed and return episodes sorted newest-first.
+
+    Uses httpx (with certifi) to fetch the feed content, avoiding
+    SSL certificate issues with the system urllib on macOS.
+    """
+    try:
+        resp = httpx.get(url, follow_redirects=True, timeout=30.0)
+        resp.raise_for_status()
+        feed = feedparser.parse(resp.content)
+    except httpx.HTTPError as e:
+        raise ValueError(f"Failed to fetch RSS feed: {e}") from e
+
     if feed.bozo and not feed.entries:
-        raise ValueError(f"Failed to parse RSS feed: {url}")
+        raise ValueError(
+            f"Failed to parse RSS feed: {url}\n"
+            f"Reason: {feed.get('bozo_exception', 'unknown error')}"
+        )
 
     episodes = []
     for entry in feed.entries:
