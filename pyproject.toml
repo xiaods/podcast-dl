@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "podcast-dl"
+version = "0.1.0"
+description = "Download and transcribe podcasts to Chinese text"
+requires-python = ">=3.10,<3.13"
+license = {text = "MIT"}
+keywords = ["podcast", "transcription", "whisper", "chinese", "cli"]
+
+dependencies = [
+    "click>=8.1",
+    "rich>=13.0",
+    "feedparser>=6.0",
+    "httpx>=0.27",
+    "faster-whisper>=1.0",
+    "platformdirs>=4.0",
+]
+
+[project.scripts]
+podcast-dl = "podcast_dl.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/podcast_dl"]
+
+[tool.uv]
+dev-dependencies = []

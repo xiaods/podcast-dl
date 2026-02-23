@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(uv --version:*)",
+      "Bash(uv tool install:*)"
+    ]
+  }
+}
